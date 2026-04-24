@@ -4,11 +4,15 @@ from typing import Any, Optional
 # Intra-package imports (forward refs resolved at runtime)
 from ..core.memory import MemorySystem
 from ..core.validation import OutputValidator
+from ..core.events import EventBus, Event, EventType
 from .types import TaskState, AgentState
 
 
 class BaseAgent:
     """Base class for all specialized sub-agents."""
+    
+    # 全局事件总线（类级别，所有Agent共享）
+    bus = EventBus()
     
     def __init__(self, llm: 'LLMClient', memory: MemorySystem, validator: OutputValidator):
         self.llm = llm

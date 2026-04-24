@@ -10,7 +10,7 @@ AI-Staff V4 启动模块 — 从 staff.py 拆分出来的零配置启动逻辑
 """
 
 from __future__ import annotations
-import os, re
+import os, re, json
 from typing import Optional
 
 
@@ -123,13 +123,28 @@ def from_env(cls, model: str = "") -> 'AIStaff':
     try:
         return cls.discover_and_start()
     except Exception as e:
+        # Last resort: try ~/.ai-staff/keys.json
+        import json as _json
+        keys_path = os.path.expanduser("~/.ai-staff/keys.json")
+        if os.path.exists(keys_path):
+            try:
+                with open(keys_path, "r") as f:
+                    keys_data = _json.load(f)
+                for provider_name in ("gemini", "openai", "deepseek"):
+                    pkey = keys_data.get(provider_name, {}).get("api_key", "")
+                    if pkey:
+                        print(f"  [V4/from_env] Found key in {keys_path} ({provider_name})")
+                        return cls.quick_start(api_key=pkey, provider=provider_name)
+            except Exception:
+                pass
+        
         raise RuntimeError(
-            "V4 from_env() failed: no API keys found in environment.\n"
-            "Set one of:\n"
-            "  - AI_STAFF_API_KEY + AI_STAFF_BASE_URL\n"
-            "  - GEMINI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY\n"
-            "  - AI_STAFF_CONFIG=/path/to/config.yaml\n"
-            "Or use: AIStaff.quick_start('your-api-key')"
+            "V4 from_env() failed: no API keys found.\n"
+            "Options:\n"
+            "  1. Set GEMINI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY\n"
+            "  2. Put keys in ~/.ai-staff/keys.json\n"
+            "  3. Use: AIStaff.quick_start('your-api-key')\n"
+            "  4. Create config.yaml (see config_template.yaml)"
         ) from e
 
 
@@ -236,6 +251,27 @@ def discover_and_start(cls, proxy: str = "") -> 'AIStaff':
         if os.path.isfile(cp):
             print(f"  [V4/discover] ✓ Found config at: {cp}")
             return cls.from_config_file(cp)
+    
+    # Try keys.json
+    keys_file = os.path.expanduser("~/.ai-staff/keys.json")
+    if os.path.isfile(keys_file):
+        try:
+            with open(keys_file, "r", encoding="utf-8") as f:
+                keys_data = json.load(f)
+            for provider_name, api_key in keys_data.items():
+                if api_key and provider_name in PROVIDER_TEMPLATES:
+                    tmpl = PROVIDER_TEMPLATES[provider_name]
+                    print(f"  [V4/discover] ✓ Found key for {provider_name} in {keys_file}")
+                    return cls(
+                        base_url=tmpl["base_url"], api_key=api_key,
+                        model=tmpl.get("model", ""), proxy=proxy,
+                    )
+                elif api_key:
+                    # Generic key — try as gemini
+                    print(f"  [V4/discover] ✓ Found key ({provider_name}) in {keys_file}, trying quick_start")
+                    return cls.quick_start(api_key=api_key, provider=provider_name)
+        except Exception:
+            pass
     
     # Nothing found
     scanned = list(all_env_patterns.keys()) + ["Ollama (localhost:11434)"] + config_paths
