@@ -301,7 +301,7 @@ class AIStaff:
             output_dir = os.path.join(os.getcwd(), f'ai_staff_{mode_tag}_{safe_name}_{timestamp}')
         try:
             saved = result.save(output_dir)
-            log.success(f"💾 已保存到: {output_dir}/ ({len(saved)}个文件)")
+            log.success(f"Saved to: {output_dir}/ ({len(saved)} files)")
             return saved
         except Exception as e:
             log.warn(f"Auto-save failed: {e}")
@@ -861,18 +861,18 @@ class AIStaff:
         lines.append(f"│  📋 Phase 1: 规划分解 [{planner.name}]{' '*26}│")
         lines.append(f"└{'─'*66}┘")
         
-        plan_prompt = f"""你是一个项目规划师。请将以下目标分解为可执行的步骤。
+        plan_prompt = f"""You are a project planner. Break down the following goal into executable steps.
 
-## 目标
+## Goal
 {goal}
 
-## 可用专家团队
+## Available Expert Team
 {', '.join(f'{e.name}({e.id})' for e in participants)}
 
-请输出：
-1. 执行步骤列表（每个步骤指派给最合适的专家）
-2. 每步的预期产出物
-3. 关键依赖关系"""
+Output:
+1. Execution steps (assign the best expert to each step)
+2. Expected deliverable for each step
+3. Key dependencies"""
         
         try:
             plan_start = time.time()
@@ -1527,8 +1527,8 @@ staff = AIStaff.from_config_file("config.yaml")
         classifier = TaskClassifier()
         strategy = classifier.classify(user_input)
         
-        log.divider(f"V5策略: {strategy.display_name} ({strategy.mode})")
-        log.system(f"专家: {', '.join(strategy.experts)} | 需要审查: {strategy.needs_review}")
+        log.divider(f"V5 Strategy: {strategy.display_name} ({strategy.mode})")
+        log.system(f"Experts: {', '.join(strategy.experts)} | Review: {strategy.needs_review}")
         
         # Step 2: 构建路由上下文
         from ..agents.collab_loop import RouteContext
@@ -1585,9 +1585,9 @@ staff = AIStaff.from_config_file("config.yaml")
             output_dir = os.path.join(os.getcwd(), f'ai_staff_v5_{safe_name}_{timestamp}')
         
         saved_files = result.save(output_dir)
-        log.success(f"V5结果已保存: {output_dir}/ ({len(saved_files)}个文件)")
-        log.reviewer(f"最终评分: {collab_stats.get('final_score', 'N/A')}/100")
-        log.system(f"迭代次数: {collab_stats.get('iterations', 1)} | 总耗时: {total_time:.1f}s")
+        log.success(f"V5 saved: {output_dir}/ ({len(saved_files)} files)")
+        log.reviewer(f"Final score: {collab_stats.get('final_score', 'N/A')}/100")
+        log.system(f"Iterations: {collab_stats.get('iterations', 1)} | Time: {total_time:.1f}s")
         log.budget(tokens=collab_stats.get('total_tokens', 0))
         
         # V4.1: self_improve已移除，不再触发自改进

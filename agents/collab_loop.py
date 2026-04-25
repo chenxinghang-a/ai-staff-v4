@@ -87,7 +87,7 @@ class StructuredFeedback:
             parts.append("### 📝 改进建议")
             for s in self.suggestions:
                 parts.append(f"- {s}")
-        parts.append(f"\n**当前评分: {self.score}/100** — 目标: >= 80分")
+        parts.append(f"\n**Current score: {self.score}/100** — Target: >= 80")
         return "\n".join(parts)
 
 
@@ -144,77 +144,77 @@ class CollaborationLoop:
     这不是"排队说话"，而是"主编指挥作者和校对在协作文档上迭代"。
     """
     
-    # 审查提示词 — 强制JSON输出
-    REVIEW_PROMPT = """你是严格的质量审查员。请审查以下AI生成的内容。
+    # Review prompt — enforce JSON output
+    REVIEW_PROMPT = """You are a strict quality reviewer. Review the following AI-generated content.
 
-【原始任务】
+[Original Task]
 {task}
 
-【AI生成的内容】
+[AI-Generated Content]
 {content}
 
-请严格按以下JSON格式输出审查结果（不要输出其他内容）：
+Output your review strictly in this JSON format (nothing else):
 ```json
 {{
-  "score": <0-100的整数评分>,
-  "passed": <true如果score>=80>,
-  "issues": ["具体问题1", "具体问题2"],
-  "suggestions": ["具体改进建议1", "具体改进建议2"],
-  "strengths": ["做得好的地方1", "做得好的地方2"]
+  "score": <integer 0-100>,
+  "passed": <true if score>=80>,
+  "issues": ["specific issue 1", "specific issue 2"],
+  "suggestions": ["specific improvement 1", "specific improvement 2"],
+  "strengths": ["what was done well 1", "what was done well 2"]
 }}
 ```
 
-评分标准：
-- 90-100: 优秀，无需修改
-- 80-89: 良好，小修即可
-- 60-79: 需要较大修改
-- 40-59: 有明显问题
-- 0-39: 严重不符合要求
+Scoring guide:
+- 90-100: Excellent, no changes needed
+- 80-89: Good, minor fixes only
+- 60-79: Needs significant revision
+- 40-59: Has obvious problems
+- 0-39: Severely inadequate
 
-重要：只输出JSON，不要输出任何其他文字！"""
+Important: Output ONLY JSON, no other text!"""
     
-    # 讨论模式提示词 — Reviewer不只是打分，而是参与讨论
-    DISCUSS_REVIEW_PROMPT = """你是一位资深合作者，正在与另一位AI协作者一起完成一个任务。
+    # Discussion review prompt — Reviewer participates in discussion, not just scoring
+    DISCUSS_REVIEW_PROMPT = """You are a senior collaborator working with another AI to complete a task.
 
-【原始任务】
+[Original Task]
 {task}
 
-【协作者的输出】
+[Collaborator's Output]
 {content}
 
-请你从以下角度参与讨论：
-1. **补充观点**：协作者遗漏了什么重要内容？请补充你的见解。
-2. **建设性批评**：有什么可以改进的地方？给出具体的修改建议。
-3. **正面反馈**：哪些部分做得好，应该保持？
-4. **综合评分**：给整体质量打分。
+Participate in the discussion from these angles:
+1. **Supplementary insights**: What important content did the collaborator miss? Add your perspective.
+2. **Constructive criticism**: What can be improved? Give specific suggestions.
+3. **Positive feedback**: What was done well and should be kept?
+4. **Overall score**: Rate the overall quality.
 
-请严格按以下JSON格式输出（不要输出其他内容）：
+Output strictly in this JSON format (nothing else):
 ```json
 {{
-  "score": <0-100的整数评分>,
-  "passed": <true如果score>=80>,
-  "issues": ["需要改进的问题1", "需要改进的问题2"],
-  "suggestions": ["具体补充/改进建议1", "具体补充/改进建议2"],
-  "strengths": ["做得好的地方1", "做得好的地方2"],
-  "discussion": "你的补充观点和讨论内容（2-4句话，这是你与协作者的对话）"
+  "score": <integer 0-100>,
+  "passed": <true if score>=80>,
+  "issues": ["issue to fix 1", "issue to fix 2"],
+  "suggestions": ["specific improvement 1", "specific improvement 2"],
+  "strengths": ["what was done well 1", "what was done well 2"],
+  "discussion": "Your supplementary insights and discussion (2-4 sentences, this is your dialogue with the collaborator)"
 }}
 ```
 
-重要：只输出JSON！discussion字段是你"说话"的地方。"""
+Important: Output ONLY JSON! The discussion field is where you "speak"."""
     
     # 修正提示词 — 带具体反馈
-    REVISION_PROMPT = """你是一个正在与审查员协作的作者。请根据审查反馈修正你的作品。
+    REVISION_PROMPT = """You are an author collaborating with a reviewer. Revise your work based on the review feedback.
 
-【原始任务】
+[Original Task]
 {task}
 
-【你的初稿】
+[Your Draft]
 {previous_draft}
 
-【审查反馈】
+[Review Feedback]
 {feedback_prompt}
 
-请针对反馈中提到的每个问题逐一修正。保持原有优点（strengths中提到的），只修改有问题的部分。输出修正后的完整内容（不是diff）。"""
+Address each issue mentioned in the feedback. Keep the strengths, only fix the problematic parts. Output the complete revised content (not a diff)."""
     
     @staticmethod
     def _safe_truncate(text: str, limit: int = 4000) -> str:
@@ -259,11 +259,11 @@ class CollaborationLoop:
         if expert is None:
             expert = ExpertRegistry.get("generalist")
         if expert is None:
-            # 终极fallback：内联创建
+            # Ultimate fallback: inline creation
             expert = ExpertConfig(
-                id="generalist", name="通用助手",
+                id="generalist", name="General Assistant",
                 description="Fallback expert",
-                system_prompt="你是一个专业、高效的AI助手。请用中文回答，结构清晰。",
+                system_prompt="You are a professional, efficient AI assistant. Answer clearly and concisely.",
             )
         
         # 如果没有路由上下文，自动生成
@@ -547,7 +547,7 @@ class CollaborationLoop:
         # 超过最大迭代次数
         total_time = time.time() - start_time
         final_score = last_feedback.score if last_feedback else 0
-        log.warn(f"超过最大迭代次数 ({route_ctx.max_iterations}), 当前分数={final_score}")
+        log.warn(f"Max iterations reached ({route_ctx.max_iterations}), score={final_score}")
         
         bus.publish(Event(EventType.TASK_COMPLETE, {
             "trace_id": trace_id, "score": final_score,

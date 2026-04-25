@@ -243,7 +243,7 @@ class _Logger:
         label = {"exec": "Writer", "review": "Reviewer", "revise": "Revising", "rebuttal": "Rebuttal"}.get(phase, phase)
         color = {"exec": C.GREEN, "review": C.BLUE, "revise": C.YELLOW, "rebuttal": C.MAGENTA}.get(phase, C.GRAY)
         iter_str = f" #{iteration}" if iteration else ""
-        self._phase(color, icon, label, f"开始{iter_str}", timing=True, phase_id=phase)
+        self._phase(color, icon, label, f"start{iter_str}", timing=True, phase_id=phase)
     
     def phase_end(self, phase: str, score: int = -1, chars: int = 0, **kw):
         """标记阶段结束"""
@@ -254,12 +254,12 @@ class _Logger:
         if score >= 0:
             color_code = C.GREEN if score >= 80 else (C.YELLOW if score >= 50 else C.RED)
             if _supports_color():
-                parts.append(f"评分:{color_code}{score}/100{C.RESET}")
+                parts.append(f"Score:{color_code}{score}/100{C.RESET}")
             else:
-                parts.append(f"评分:{score}/100")
+                parts.append(f"Score:{score}/100")
         if chars:
             parts.append(f"{chars:,}ch")
-        msg = " | ".join(parts) if parts else "完成"
+        msg = " | ".join(parts) if parts else "done"
         icon = {"exec": "🟢", "review": "🔵", "revise": "🟠", "rebuttal": "🟣"}.get(phase, "✅")
         label = {"exec": "Writer", "review": "Reviewer", "revise": "Revising", "rebuttal": "Rebuttal"}.get(phase, phase)
         color = {"exec": C.GREEN, "review": C.BLUE, "revise": C.YELLOW, "rebuttal": C.MAGENTA}.get(phase, C.GRAY)

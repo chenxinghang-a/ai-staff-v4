@@ -36,99 +36,103 @@ class TaskClassifier:
     # Task type definitions with keyword patterns
     TASK_DEFINITIONS: dict[str, dict] = {
         "direct": {
-            "name": "快速问答",
-            "keywords": ["什么是", "怎么", "如何", "解释", "定义", "意思", "1+1",
-                        "hello", "hi", "你好", "谢谢", "翻译", "convert",
-                        "多少", "几", "谁", "哪里", "什么时候", "list"],
-            "anti_keywords": ["分析", "设计", "实现", "开发", "研究", "对比", 
-                            "评估", "方案", "架构", "系统"],
-            "max_length": 80,  # Short queries are usually direct Q&A
+            "name": "Quick Q&A",
+            "keywords": ["what is", "how to", "explain", "define", "meaning",
+                        "capital of", "who is", "where is", "when was",
+                        "tell me", "translate", "how many", "how much",
+                        "calculate", "convert", "simple", "hello", "hi",
+                        "1\\+1", "yes or no", "true or false", "list"],
+            "anti_keywords": ["analyze", "design", "implement", "develop",
+                            "research", "compare", "evaluate", "architect",
+                            "review", "optimize", "refactor"],
+            "max_length": 120,
             "experts": ["generalist"],
             "primary": "generalist",
             "needs_review": False,
             "output_format": "text",
             "max_rounds": 1,
             "followups": [],
-            "desc": "单专家快速回答，适合简单问答和事实查询"
+            "desc": "Single-expert quick answer for simple Q&A and fact lookup"
         },
         "code": {
-            "name": "代码任务",
-            "keywords": ["写代码", "实现", "function", "debug", "bug", "程序",
-                        "算法", "script", "api", "接口", "爬虫", "函数",
-                        "代码", "编程", "python", "javascript", "java", "c++",
-                        "class ", "def ", "import ", "实现一个", "帮我写"],
+            "name": "Code Task",
+            "keywords": ["write code", "implement", "function", "debug", "bug",
+                        "script", "api", "algorithm", "build a", "create a",
+                        "code review", "refactor", "fix the", "optimize",
+                        "python", "javascript", "java", "c\\+\\+",
+                        "class ", "def ", "import ", "unit test"],
             "experts": ["coder", "critic"],
             "primary": "coder",
             "needs_review": True,
             "output_format": "code",
             "max_rounds": 2,
             "followups": [
-                "请检查以上代码的边界情况和潜在错误。",
-                "能否优化性能或简化逻辑？给出改进版本。"
+                "Check the above code for edge cases and potential bugs.",
+                "Can you optimize performance or simplify the logic? Provide an improved version."
             ],
-            "desc": "编码+审查双专家流程，确保代码质量"
+            "desc": "Code + review dual-expert pipeline for quality assurance"
         },
         "research": {
-            "name": "深度研究",
-            "keywords": ["研究", "分析", "调研", "综述", "趋势", "原理",
-                        "为什么", "对比.*优缺", "发展史", "现状", "前景",
-                        "deep.?dive", "深入", "详细分析", "全面", "报告"],
+            "name": "Deep Research",
+            "keywords": ["research", "analyze", "investigate", "trends",
+                        "comprehensive", "in.?depth", "overview", "survey",
+                        "deep.?dive", "why does", "history of", "state of",
+                        "future of", "comparison", "literature"],
             "experts": ["researcher"],
             "primary": "researcher",
             "needs_review": False,
             "output_format": "markdown_report",
             "max_rounds": 4,
             "followups": [
-                "基于以上内容，进一步深挖最关键的技术细节或争议点。",
-                "有哪些容易被忽视的重要方面或常见认知误区？",
-                "从实践者角度，给出具体行动指南：入门路径、避坑建议、工具推荐。"
+                "Dig deeper into the most critical technical details or controversies.",
+                "What important aspects or common misconceptions are easily overlooked?",
+                "From a practitioner's perspective, provide an actionable guide: getting started, pitfalls, and tool recommendations."
             ],
-            "desc": "研究员多轮迭代追问，适合复杂分析和研究报告"
+            "desc": "Multi-round iterative deep dive for complex analysis and reports"
         },
         "decision": {
-            "name": "决策辅助",
-            "keywords": ["应该", "选择", "建议", "哪个好", "买哪个",
-                        "推荐", "优缺点", "比较", "对比", "选型",
-                        "是否值得", "a还是b", "or", "vs", "取舍",
-                        "更好用", "哪个更"],
+            "name": "Decision Support",
+            "keywords": ["should i", "which is better", "recommend",
+                        "pros and cons", "compare", "vs", "versus",
+                        "choose between", "trade.?off", "worth it",
+                        "alternative", "evaluate options", "decision"],
             "experts": ["planner", "researcher", "critic"],
             "primary": "planner",
             "needs_review": True,
             "output_format": "markdown_report",
             "max_rounds": 2,
             "followups": [],
-            "desc": "多维度分析+权衡建议，帮助做决策"
+            "desc": "Multi-dimensional analysis with trade-off recommendations"
         },
         "creative": {
-            "name": "创意任务",
-            "keywords": ["创意", "设计", "文案", "故事", "脑暴", "想法",
-                        "命名", "slogan", "标题", "海报", "logo",
-                        "营销", "推广", "文案写作", "广告", "策划",
-                        "发布会", "活动方案", "宣传", "品牌"],
+            "name": "Creative Task",
+            "keywords": ["creative", "brainstorm", "slogan", "story",
+                        "write a", "design a", "come up with",
+                        "headline", "tagline", "logo", "brand",
+                        "marketing", "campaign", "pitch", "copy"],
             "experts": ["writer", "critic"],
             "primary": "writer",
             "needs_review": True,
             "output_format": "text",
             "max_rounds": 2,
             "followups": [
-                "这个方案还有什么可以改进或更有吸引力的地方？",
-                "给我3个不同风格的替代版本。"
+                "What can be improved or made more compelling in this proposal?",
+                "Give me 3 alternative versions in different styles."
             ],
-            "desc": "创作+审美审查双重保障"
+            "desc": "Creative writing + aesthetic review dual guarantee"
         },
         "collaborate": {
-            "name": "圆桌协作",
-            # This is the fallback for complex/multi-domain tasks
-            # or explicitly requested via keywords
-            "keywords": ["圆桌", "讨论", "辩论", "多方", "会议",
-                        "综合意见", "团队", "协作", "各抒己见"],
+            "name": "Roundtable",
+            "keywords": ["roundtable", "debate", "multi.?perspective",
+                        "collaborate", "committee", "panel",
+                        "comprehensive analysis", "cross.?domain"],
             "experts": ["planner", "researcher", "coder", "critic"],
             "primary": "planner",
             "needs_review": True,
             "output_format": "folder",
             "max_rounds": 2,
             "followups": [],
-            "desc": "多专家目标驱动协作，产出完整工作成果（仅复杂任务触发）"
+            "desc": "Multi-expert goal-driven collaboration for complex deliverables (rare)"
         },
     }
 
@@ -232,11 +236,11 @@ class TaskClassifier:
         if not strategy:
             strategy = self.classify(user_input)
         return (
-            f"📋 任务分类: [{strategy.display_name}] ({strategy.mode})\n"
-            f"   策略: {strategy.description}\n"
-            f"   专家: {', '.join(strategy.experts)}\n"
-            f"   轮次: {strategy.max_rounds} | 审查: {'是' if strategy.needs_review else '否'}\n"
-            f"   输出: {strategy.output_format}"
+            f"[{strategy.display_name}] ({strategy.mode})\n"
+            f"  Strategy: {strategy.description}\n"
+            f"  Experts: {', '.join(strategy.experts)}\n"
+            f"  Rounds: {strategy.max_rounds} | Review: {'yes' if strategy.needs_review else 'no'}\n"
+            f"  Output: {strategy.output_format}"
         )
 
 

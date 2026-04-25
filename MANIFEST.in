@@ -1,0 +1,7 @@
+include README.md
+include README_CN.md
+include DESIGN.md
+include LICENSE
+include pyproject.toml
+include requirements.txt
+recursive-include ai_staff_v4 *.yaml *.py *.typed

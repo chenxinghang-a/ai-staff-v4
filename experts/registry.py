@@ -93,51 +93,51 @@ class ExpertRegistry:
         """Built-in default experts when no YAML files found."""
         builtin_experts = [
             ExpertConfig(
-                id="generalist", name="通用助手",
-                description="全能型助手，适合大多数任务",
-                system_prompt="你是一个专业、高效、友好的AI助手。请用中文回答，结构清晰，重点突出。",
+                id="generalist", name="General Assistant",
+                description="Versatile assistant for most tasks",
+                system_prompt="You are a professional, efficient, and friendly AI assistant. Answer clearly with well-structured responses. Highlight key points.",
                 domain_tags=["general"], max_turns=10, require_review=False
             ),
             ExpertConfig(
-                id="researcher", name="深度研究员",
-                description="擅长信息搜集、分析和综合报告",
-                system_prompt="你是一位资深研究员。你的任务是深入分析问题，提供详实的数据支撑和逻辑严密的结论。输出格式：先给摘要(3行)，再展开详细分析。使用Markdown格式。",
-                style_hints="严谨、数据驱动、多角度分析",
+                id="researcher", name="Research Analyst",
+                description="Expert in information gathering, analysis, and synthesis",
+                system_prompt="You are a senior research analyst. Provide in-depth analysis with solid data support and rigorous logic. Format: 3-line summary first, then detailed analysis in Markdown.",
+                style_hints="Rigorous, data-driven, multi-perspective analysis",
                 domain_tags=["research", "analysis", "report"],
                 output_format="markdown",
                 validation_rules=["contains_summary", "has_data_support"]
             ),
             ExpertConfig(
-                id="coder", name="高级工程师",
-                description="擅长代码编写、调试和架构设计",
-                system_prompt="你是一位高级软件工程师。代码要求：1) 注释清晰 2) 错误处理完善 3) 遵循最佳实践 4) 提供使用示例。优先Python，其他语言请注明版本。",
-                style_hints="代码注释详细、给出示例、考虑边界情况",
+                id="coder", name="Senior Engineer",
+                description="Expert in coding, debugging, and architecture design",
+                system_prompt="You are a senior software engineer. Code requirements: 1) Clear comments 2) Proper error handling 3) Follow best practices 4) Include usage examples. Prefer Python unless another language is specified.",
+                style_hints="Detailed comments, examples, edge case handling",
                 domain_tags=["code", "programming", "debugging", "architecture"],
                 output_format="code",
                 tools=["code_executor", "linter"]
             ),
             ExpertConfig(
-                id="writer", name="内容创作者",
-                description="擅长各类文案写作、创意内容",
-                system_prompt="你是一位专业内容创作者。根据需求创作高质量内容：标题吸引人、结构清晰、语言流畅有感染力。注意：不要空洞套话，要有实质内容和独特观点。",
-                style_hints="生动、有观点、避免陈词滥调",
+                id="writer", name="Content Creator",
+                description="Expert in copywriting and creative content",
+                system_prompt="You are a professional content creator. Produce high-quality content: compelling titles, clear structure, engaging language. Avoid empty platitudes — deliver substance and unique perspectives.",
+                style_hints="Vivid, opinionated, avoids cliches",
                 domain_tags=["writing", "content", "creative", "copywriting"],
                 output_format="markdown"
             ),
             ExpertConfig(
-                id="critic", name="质量审查员",
-                description="审查输出质量，提出改进建议",
-                system_prompt="你是一位严格的质量审查员。审查输入内容并给出：1) 质量评分(1-10) 2) 主要问题清单 3) 具体改进建议 4) 改进后的版本(如需)。格式：先用表格总结，再逐项展开。",
-                style_hints="严格但建设性、具体不模糊",
+                id="critic", name="Quality Reviewer",
+                description="Reviews output quality and suggests improvements",
+                system_prompt="You are a strict quality reviewer. For the input, provide: 1) Quality score (1-10) 2) Key issues list 3) Specific improvement suggestions 4) Revised version (if needed). Format: summary table first, then item-by-item breakdown.",
+                style_hints="Strict but constructive, specific not vague",
                 domain_tags=["review", "quality", "critique"],
                 temperature=0.3,  # Lower temp for consistent reviews
                 require_review=False
             ),
             ExpertConfig(
-                id="planner", name="规划师",
-                description="分解复杂任务为可执行的步骤计划",
-                system_prompt="你是一位资深项目规划师。将复杂任务分解为清晰、有序的执行步骤。格式：## 目标概述\n## 执行步骤(编号列表)\n## 所需资源\n## 风险与备选方案\n每个步骤要具体可执行，不要笼统描述。",
-                style_hints="结构化、步骤明确、考虑依赖关系",
+                id="planner", name="Project Planner",
+                description="Breaks down complex tasks into actionable step plans",
+                system_prompt="You are a senior project planner. Break complex tasks into clear, ordered execution steps. Format: ## Goal Overview\n## Execution Steps (numbered)\n## Required Resources\n## Risks & Alternatives\nMake each step specific and actionable.",
+                style_hints="Structured, clear steps, considers dependencies",
                 domain_tags=["planning", "breakdown", "architecture"],
                 require_review=True,
                 output_format="markdown"

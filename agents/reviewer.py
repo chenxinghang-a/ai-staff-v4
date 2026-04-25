@@ -18,21 +18,21 @@ class ReviewAgent(BaseAgent):
     Critiques output and suggests improvements before final delivery.
     """
     
-    REVIEW_PROMPT = """你是一个严格的输出质量审查员。请审查以下AI回复的质量。
+    REVIEW_PROMPT = """You are a strict output quality reviewer. Review the following AI response.
 
-【原始问题】
+[Original Question]
 {question}
 
-【AI回复】
+[AI Response]
 {response}
 
-请按以下格式输出审查结果：
+Output your review in this format:
 
-## 质量评分: X/10
-## 是否通过: 是/否
-## 问题列表:
+## Quality Score: X/10
+## Passed: yes/no
+## Issues:
 1. ...
-## 改进建议:
+## Improvement Suggestions:
 ..."""
 
     def run(self, task_state: TaskState, expert: ExpertConfig, messages: list[dict]) -> ValidationResult:
@@ -52,19 +52,21 @@ class ReviewAgent(BaseAgent):
         
         review_response, _usage = self.llm.chat_completion(review_messages, temperature=0.2)
         
-        # Parse score — 默认0.0（避免0.7误导为"几乎通过"导致死循环）
-        score_match = re.search(r'质量评分[::\s]*(\d+)/?10?', review_response)
+        # Parse score — default 0.0 (avoid 0.7 misleading as "almost passed" causing loops)
+        score_match = re.search(r'[Qq]uality [Ss]core[::\s]*(\d+)/?10?', review_response)
+        if not score_match:
+            score_match = re.search(r'[Ss]core[::\s]*(\d+)/?10?', review_response)
         if score_match:
             score = float(score_match.group(1)) / 10
         else:
             score = 0.0
             logger.warning("Review score regex failed, defaulting to 0.0")
         
-        # Parse pass/fail — 大小写不敏感
-        passed = bool(re.search(r'是否通过[::\s]*是', review_response, re.IGNORECASE))
+        # Parse pass/fail — case insensitive
+        passed = bool(re.search(r'[Pp]assed[::\s]*yes', review_response, re.IGNORECASE))
         
         # Parse issues
-        issues_section = re.search(r'问题列表[::\s]*\n(.*?)(?=##|$)', review_response, re.DOTALL)
+        issues_section = re.search(r'[Ii]ssues[::\s]*\n(.*?)(?=##|$)', review_response, re.DOTALL)
         issues = []
         if issues_section:
             for line in issues_section.group(1).strip().split('\n'):
