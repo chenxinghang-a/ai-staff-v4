@@ -36,15 +36,15 @@ class TaskClassifier:
     # Task type definitions with keyword patterns
     TASK_DEFINITIONS: dict[str, dict] = {
         "direct": {
-            "name": "Quick Q&A",
-            "keywords": ["what is", "how to", "explain", "define", "meaning",
-                        "capital of", "who is", "where is", "when was",
-                        "tell me", "translate", "how many", "how much",
-                        "calculate", "convert", "simple", "hello", "hi",
-                        "1\\+1", "yes or no", "true or false", "list"],
-            "anti_keywords": ["analyze", "design", "implement", "develop",
-                            "research", "compare", "evaluate", "architect",
-                            "review", "optimize", "refactor"],
+            "name": "快速问答",
+            "keywords": ["什么是", "怎么", "如何", "解释", "定义", "意思", "1+1",
+                        "hello", "hi", "你好", "谢谢", "翻译", "convert",
+                        "多少", "几", "谁", "哪里", "什么时候", "list",
+                        "what is", "how to", "explain", "define",
+                        "额定", "参数", "规格"],
+            "anti_keywords": ["分析", "设计", "实现", "开发", "研究", "对比",
+                            "评估", "方案", "架构", "系统",
+                            "analyze", "design", "implement"],
             "max_length": 120,
             "experts": ["generalist"],
             "primary": "generalist",
@@ -52,87 +52,85 @@ class TaskClassifier:
             "output_format": "text",
             "max_rounds": 1,
             "followups": [],
-            "desc": "Single-expert quick answer for simple Q&A and fact lookup"
+            "desc": "单专家快速回答，适合简单问答和参数查询"
         },
         "code": {
-            "name": "Code Task",
-            "keywords": ["write code", "implement", "function", "debug", "bug",
-                        "script", "api", "algorithm", "build a", "create a",
-                        "code review", "refactor", "fix the", "optimize",
-                        "python", "javascript", "java", "c\\+\\+",
-                        "class ", "def ", "import ", "unit test"],
+            "name": "控制程序设计",
+            "keywords": ["写代码", "实现", "function", "debug", "bug", "程序",
+                        "PLC", "梯形图", "SCADA", "HMI", "控制逻辑",
+                        "算法", "script", "api", "接口", "函数",
+                        "编程", "python", "上位机", "通信",
+                        "write code", "implement", "build a"],
             "experts": ["coder", "critic"],
             "primary": "coder",
             "needs_review": True,
             "output_format": "code",
             "max_rounds": 2,
             "followups": [
-                "Check the above code for edge cases and potential bugs.",
-                "Can you optimize performance or simplify the logic? Provide an improved version."
+                "请检查以上控制逻辑的安全联锁和边界条件。",
+                "能否优化性能或简化逻辑？给出符合IEC标准的改进版本。"
             ],
-            "desc": "Code + review dual-expert pipeline for quality assurance"
+            "desc": "控制程序+安全审查双专家流程，确保工业可靠性"
         },
         "research": {
-            "name": "Deep Research",
-            "keywords": ["research", "analyze", "investigate", "trends",
-                        "comprehensive", "in.?depth", "overview", "survey",
-                        "deep.?dive", "why does", "history of", "state of",
-                        "future of", "comparison", "literature"],
+            "name": "系统分析",
+            "keywords": ["研究", "分析", "调研", "综述", "趋势", "原理",
+                        "为什么", "故障诊断", "运行分析", "现状", "前景",
+                        "深入", "详细分析", "全面", "报告",
+                        "research", "analyze", "investigate"],
             "experts": ["researcher"],
             "primary": "researcher",
             "needs_review": False,
             "output_format": "markdown_report",
             "max_rounds": 4,
             "followups": [
-                "Dig deeper into the most critical technical details or controversies.",
-                "What important aspects or common misconceptions are easily overlooked?",
-                "From a practitioner's perspective, provide an actionable guide: getting started, pitfalls, and tool recommendations."
+                "基于以上分析，进一步深挖关键技术细节或安全隐患。",
+                "有哪些容易被忽视的重要方面或常见认知误区？",
+                "从工程实践角度，给出具体行动指南：调试步骤、避坑建议、工具推荐。"
             ],
-            "desc": "Multi-round iterative deep dive for complex analysis and reports"
+            "desc": "电气系统分析员多轮迭代，适合故障分析和系统评估"
         },
         "decision": {
-            "name": "Decision Support",
-            "keywords": ["should i", "which is better", "recommend",
-                        "pros and cons", "compare", "vs", "versus",
-                        "choose between", "trade.?off", "worth it",
-                        "alternative", "evaluate options", "decision"],
+            "name": "方案决策",
+            "keywords": ["应该", "选择", "建议", "哪个好", "买哪个",
+                        "推荐", "优缺点", "比较", "对比", "选型",
+                        "是否值得", "or", "vs", "取舍",
+                        "should i", "which is better", "recommend"],
             "experts": ["planner", "researcher", "critic"],
             "primary": "planner",
             "needs_review": True,
             "output_format": "markdown_report",
             "max_rounds": 2,
             "followups": [],
-            "desc": "Multi-dimensional analysis with trade-off recommendations"
+            "desc": "多维度技术方案对比+安全合规审查"
         },
         "creative": {
-            "name": "Creative Task",
-            "keywords": ["creative", "brainstorm", "slogan", "story",
-                        "write a", "design a", "come up with",
-                        "headline", "tagline", "logo", "brand",
-                        "marketing", "campaign", "pitch", "copy"],
+            "name": "技术文档",
+            "keywords": ["文档", "报告", "方案书", "操作手册", "说明书",
+                        "规程", "编写", "起草", "标书", "技术规格",
+                        "write a", "design a", "写一份", "起草一份"],
             "experts": ["writer", "critic"],
             "primary": "writer",
             "needs_review": True,
             "output_format": "text",
             "max_rounds": 2,
             "followups": [
-                "What can be improved or made more compelling in this proposal?",
-                "Give me 3 alternative versions in different styles."
+                "这个技术文档还有什么可以完善的地方？",
+                "给出3个不同侧重点的替代版本。"
             ],
-            "desc": "Creative writing + aesthetic review dual guarantee"
+            "desc": "技术文档+标准合规审查双重保障"
         },
         "collaborate": {
-            "name": "Roundtable",
-            "keywords": ["roundtable", "debate", "multi.?perspective",
-                        "collaborate", "committee", "panel",
-                        "comprehensive analysis", "cross.?domain"],
+            "name": "多专家协作",
+            "keywords": ["圆桌", "讨论", "综合", "多方", "协作",
+                        "全流程", "端到端"],
             "experts": ["planner", "researcher", "coder", "critic"],
             "primary": "planner",
             "needs_review": True,
             "output_format": "folder",
             "max_rounds": 2,
             "followups": [],
-            "desc": "Multi-expert goal-driven collaboration for complex deliverables (rare)"
+            "desc": "多专家目标驱动协作，产出完整技术方案（仅复杂项目触发）"
         },
     }
 
