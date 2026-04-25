@@ -39,6 +39,20 @@ class LLMClient:
         # Optional budget reference (set by AIStaff after init)
         self.budget = None
     
+    def test_connection(self) -> bool:
+        """轻量连通测试：GET /models 或 HEAD，不消耗token"""
+        try:
+            # 尝试 models 端点（OpenAI兼容API通用）
+            resp = self._client.get(f"{self.base_url}/models", headers=self.headers, timeout=5)
+            if resp.status_code in (200, 401, 403):
+                # 200=可用, 401/403=连通但key无效 → 至少说明网络通了
+                return resp.status_code == 200
+            # 某些API没有/models端点，尝试HEAD base_url
+            resp2 = self._client.head(self.base_url, timeout=5)
+            return resp2.status_code < 500
+        except Exception:
+            return False
+
     def chat_completion(self, messages: list[dict], temperature: float = 0.7,
                         model: str = "", max_tokens: int = 8192) -> tuple[str, dict]:
         """

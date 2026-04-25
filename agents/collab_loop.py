@@ -302,6 +302,9 @@ class CollaborationLoop:
         log.route(route_ctx.task_type, route_ctx.writer_model, route_ctx.reviewer_model)
         log.system(f"Task: {task[:80]}... | MaxIter={route_ctx.max_iterations} | Threshold={route_ctx.quality_threshold}")
         
+        empty_count = 0
+        max_empty = 3  # 连续3次空输出则终止
+        
         for iteration in range(route_ctx.max_iterations):
             phase = CollabPhase.EXECUTING if iteration == 0 else CollabPhase.REVISING
             
@@ -335,10 +338,19 @@ class CollaborationLoop:
             )
             
             if not current_draft:
-                log.warn(f"[{phase.value} #{iteration+1}] EMPTY output, skipping review")
+                empty_count += 1
+                log.warn(f"[{phase.value} #{iteration+1}] EMPTY output ({empty_count}/{max_empty})")
                 bus.publish(Event(EventType.TASK_ERROR, {
                     "trace_id": trace_id, "phase": phase.value, "error": "empty_output",
+                    "iteration": iteration + 1, "empty_count": empty_count,
                 }, source="CollabLoop"))
+                self._trace_log.append(CollabPacket(
+                    trace_id=trace_id, phase=phase, content="[EMPTY OUTPUT]",
+                    iteration=iteration, model_used=exec_model_used, expert_used=expert.id,
+                ))
+                if empty_count >= max_empty:
+                    log.error(f"[{phase.value}] {max_empty} consecutive empty outputs, aborting")
+                    break
                 continue
             
             total_tokens += exec_tokens
@@ -765,10 +777,17 @@ class CollaborationLoop:
         except Exception:
             pass
         
-        # 完全无法解析
-        score_match = re.search(r'(\d{1,3})\s*/\s*100|score\s*[=:]\s*(\d{1,3})', text)
+        # 完全无法解析 — 给低分强制重试，避免正文数字误判
+        score = 30  # 低分默认值，确保触发重试而非误判通过
+        score_match = re.search(r'"score"\s*:\s*(\d{1,3})', text)
+        if not score_match:
+            # 只接受明确格式 X/100 或 score= 的数字，拒绝正文随机数字
+            score_match = re.search(r'(\d{1,3})\s*/\s*100|score\s*[=:]\s*(\d{1,3})', text, re.IGNORECASE)
         if score_match:
-            score = int(score_match.group(1) or score_match.group(2))
+            raw_score = int(score_match.group(1) or score_match.group(2) or score_match.group(3))
+            # 合理性检查：0-100之间
+            if 0 <= raw_score <= 100:
+                score = raw_score
         
         issues = []
         for m in re.finditer(r'(?:问题|issue|缺点|不足)\s*\d*[.::]\s*(.+)', text, re.IGNORECASE):

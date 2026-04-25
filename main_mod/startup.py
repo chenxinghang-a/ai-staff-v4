@@ -81,43 +81,55 @@ def from_env(cls, model: str = "") -> 'AIStaff':
         instance._model_registry = registry
         return instance
     
-    # Try provider-specific env vars
+    # Collect ALL provider keys from env vars, then scan once
+    all_keys: dict[str, str] = {}
+    
+    # Check Ollama first (local, no key needed)
+    ollama_available = False
+    try:
+        import httpx as _ht
+        r = _ht.get("http://localhost:11434/api/tags", timeout=2)
+        if r.status_code == 200:
+            ollama_available = True
+    except Exception:
+        pass
+    
+    if ollama_available:
+        all_keys["ollama"] = "ollama"
+    
+    # Scan all provider env vars
     for provider_name, tmpl in PROVIDER_TEMPLATES.items():
         if provider_name == "ollama":
-            try:
-                import httpx as _ht
-                r = _ht.get("http://localhost:11434/api/tags", timeout=2)
-                if r.status_code == 200:
-                    print(f"  [V4/from_env] Detected {tmpl['name']} locally")
-                    return cls(
-                        base_url=tmpl["base_url"], api_key=tmpl.get("api_key", ""),
-                        model=default_model or tmpl["model"], proxy=proxy,
-                        expert_id=expert_id
-                    )
-            except Exception:
-                continue
-        
+            continue  # already handled above
         for env_key in tmpl.get("env_keys", []):
-            key = os.environ.get(env_key, "")
+            key = os.environ.get(env_key, "").strip()
             if key:
-                from ..backends.smart_init import SmartInit
-                registry = SmartInit.auto_configure(
-                    extra_keys={provider_name: key},
-                    proxy_hint=proxy,
-                )
-                effective_model = default_model or registry.best_overall
-                effective_proxy = proxy or registry.proxy
-                print(f"  [V4/from_env] Found provider '{provider_name}' via {env_key}, model={effective_model}")
-                profiles = registry.to_profiles_dict()
-                if profiles:
-                    instance = cls(profiles=profiles, proxy=effective_proxy, expert_id=expert_id)
-                    instance._attach_ai_router(registry)
-                    return instance
-                else:
-                    return cls(
-                        base_url=tmpl["base_url"], api_key=key,
-                        model=effective_model, proxy=effective_proxy, expert_id=expert_id
-                    )
+                all_keys[provider_name] = key
+                break  # one key per provider is enough
+    
+    if all_keys:
+        from ..backends.smart_init import SmartInit
+        registry = SmartInit.auto_configure(
+            extra_keys=all_keys if all_keys else None,
+            proxy_hint=proxy,
+        )
+        effective_model = default_model or registry.best_overall
+        effective_proxy = proxy or registry.proxy
+        print(f"  [V4/from_env] Found {len(all_keys)} provider(s): {list(all_keys.keys())}, model={effective_model}")
+        profiles = registry.to_profiles_dict()
+        if profiles:
+            instance = cls(profiles=profiles, proxy=effective_proxy, expert_id=expert_id)
+            instance._attach_ai_router(registry)
+            return instance
+        else:
+            # Fallback: use first available key
+            first_provider = next(iter(all_keys))
+            first_key = all_keys[first_provider]
+            tmpl = PROVIDER_TEMPLATES.get(first_provider, {})
+            return cls(
+                base_url=tmpl.get("base_url", ""), api_key=first_key,
+                model=effective_model, proxy=effective_proxy, expert_id=expert_id
+            )
     
     # Nothing found — fall back to discover
     print("  [V4/from_env] No env vars found, trying auto-discover...")
@@ -139,13 +151,15 @@ def from_env(cls, model: str = "") -> 'AIStaff':
             except Exception:
                 pass
         
+        scanned_envs = [ek for p, t in PROVIDER_TEMPLATES.items() for ek in t.get("env_keys", [])]
         raise RuntimeError(
-            "V4 from_env() failed: no API keys found.\n"
-            "Options:\n"
-            "  1. Set GEMINI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY\n"
-            "  2. Put keys in ~/.ai-staff/keys.json\n"
-            "  3. Use: AIStaff.quick_start('your-api-key')\n"
-            "  4. Create config.yaml (see config_template.yaml)"
+            f"V4 from_env() failed: no API keys found.\n"
+            f"Scanned env vars: {', '.join(scanned_envs)}\n\n"
+            "Quick fix:\n"
+            "  1. set GEMINI_API_KEY=your-key   (Windows)\n"
+            "  2. export GEMINI_API_KEY=your-key (Linux/Mac)\n"
+            "  3. Or: staff = AIStaff.quick_start('your-key', provider='gemini')\n"
+            "  4. Or: create ~/.ai-staff/keys.json or config.yaml"
         ) from e
 
 

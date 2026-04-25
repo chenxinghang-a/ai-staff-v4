@@ -1376,11 +1376,11 @@ class AIStaff:
             for name, prof in self.backends.items():
                 try:
                     client = self.multi_llm._clients[name]
-                    test_msg = [{"role": "user", "content": "ping"}]
-                    resp, _usage = client.chat_completion(test_msg, max_tokens=5)
+                    # 轻量连通测试：只验证API可达，不消耗token
+                    ok = client.test_connection()
                     status["backends"][name] = {
-                        "status": "ok", "model": prof.model,
-                        "tier": prof.tier, "latency_ms": "responsive"
+                        "status": "ok" if ok else "degraded", "model": prof.model,
+                        "tier": prof.tier
                     }
                 except Exception as e:
                     status["backends"][name] = {
@@ -1390,10 +1390,10 @@ class AIStaff:
         else:
             # Single backend check
             try:
-                resp, _ = self.llm.chat_completion(
-                    [{"role": "user", "content": "ping"}], max_tokens=5
-                )
-                status["backends"]["primary"] = {"status": "ok", "model": self.llm.model}
+                ok = self.llm.test_connection()
+                status["backends"]["primary"] = {
+                    "status": "ok" if ok else "degraded", "model": self.llm.model
+                }
             except Exception as e:
                 status["backends"]["primary"] = {"status": "error", "error": str(e)[:100]}
 

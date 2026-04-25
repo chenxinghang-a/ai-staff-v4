@@ -544,17 +544,30 @@ class SmartInit:
 
     @staticmethod
     def _detect_proxy() -> str:
+        # 1. 环境变量优先（0延迟）
         for env in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "AI_STAFF_PROXY"):
             val = os.environ.get(env, "").strip()
             if val:
                 return val
-        for port in PROXY_PORTS:
+        # 2. 并发端口探测（最多1秒）
+        import concurrent.futures
+        def _check_port(port: int) -> tuple[int, bool]:
             try:
-                with httpx.Client(timeout=2) as c:
+                with httpx.Client(timeout=0.3) as c:
                     c.get(f"http://127.0.0.1:{port}", follow_redirects=True)
-                    return f"http://127.0.0.1:{port}"
+                    return port, True
             except Exception:
-                continue
+                return port, False
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+            futs = {pool.submit(_check_port, p): p for p in PROXY_PORTS}
+            for fut in concurrent.futures.as_completed(futs, timeout=1.0):
+                try:
+                    port, ok = fut.result()
+                    if ok:
+                        return f"http://127.0.0.1:{port}"
+                except Exception:
+                    continue
         return ""
 
     # ── Provider扫描 ──
@@ -653,23 +666,44 @@ class SmartInit:
         scan_order = gemini_names + deep_names + gemma_names + other_names
         models: list[ModelInfo] = []
         
-        # 计时扫描：最多60秒，测够10个可用模型就停
+        # 并发探测：线程池，测够8个可用模型或20秒就停
         scan_start = time.time()
-        usable_count = 0
-        for name in scan_order:
-            if time.time() - scan_start > 55:  # 留5秒buffer
-                # 超时：剩余模型标记为未测试
+        MAX_SCAN_TIME = 20  # 55秒→20秒
+        MIN_USABLE = 8  # 找到8个可用就提前停
+        
+        import concurrent.futures
+        
+        def _probe_one(name: str) -> ModelInfo:
+            if time.time() - scan_start > MAX_SCAN_TIME:
                 tier, inp, out = GEMINI_TIER_MAP.get(name, ("standard", 0.0001, 0.0004))
-                models.append(ModelInfo(name=name, provider="gemini",
+                return ModelInfo(name=name, provider="gemini",
                     base_url=PROVIDER_DEFS["gemini"]["base_url"], status=-1, latency_ms=0,
                     tier=tier, input_cost=inp, output_cost=out,
-                    capabilities=GEMINI_CAPABILITIES.get(name, ["reasoning"])))
-                continue
-            
-            info = SmartInit._test_gemini_model(api_key, name, proxy)
-            models.append(info)
-            if info.is_usable:
-                usable_count += 1
+                    capabilities=GEMINI_CAPABILITIES.get(name, ["reasoning"]))
+            return SmartInit._test_gemini_model(api_key, name, proxy)
+        
+        usable_count = 0
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+            futures = {pool.submit(_probe_one, n): n for n in scan_order}
+            for fut in concurrent.futures.as_completed(futures, timeout=MAX_SCAN_TIME + 5):
+                try:
+                    info = fut.result()
+                    models.append(info)
+                    if info.is_usable:
+                        usable_count += 1
+                except Exception:
+                    name = futures[fut]
+                    tier, inp, out = GEMINI_TIER_MAP.get(name, ("standard", 0.0001, 0.0004))
+                    models.append(ModelInfo(name=name, provider="gemini",
+                        base_url=PROVIDER_DEFS["gemini"]["base_url"], status=0, latency_ms=0,
+                        tier=tier, input_cost=inp, output_cost=out,
+                        capabilities=GEMINI_CAPABILITIES.get(name, ["reasoning"])))
+                
+                if usable_count >= MIN_USABLE:
+                    # 取消剩余任务
+                    for f in futures:
+                        f.cancel()
+                    break
 
         return models
 
