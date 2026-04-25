@@ -1,8 +1,10 @@
 """Example 1: Simple — 3行代码启动，零配置
 
 Usage:
-    set GEMINI_API_KEY=your-key    (Windows)
-    export GEMINI_API_KEY=your-key (Linux/Mac)
+    # Pick any provider you have a key for:
+    set DEEPSEEK_API_KEY=your-key     (Windows)
+    export DEEPSEEK_API_KEY=your-key  (Linux/Mac)
+    # Also works: GEMINI_API_KEY / OPENAI_API_KEY / MOONSHOT_API_KEY
     python examples/simple.py
 """
 import sys, os

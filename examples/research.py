@@ -1,7 +1,8 @@
 """Example: Deep research with multi-round follow-ups.
 
 Usage:
-    export GEMINI_API_KEY=your-key
+    # Set any API key (DEEPSEEK_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY)
+    export DEEPSEEK_API_KEY=your-key
     python examples/research.py
 """
 import sys, os

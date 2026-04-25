@@ -1,7 +1,8 @@
 """Example 2: Research — V5闭环协作，Writer写+Reviewer查+低分重写
 
 Usage:
-    set GEMINI_API_KEY=your-key
+    # Set any API key (DEEPSEEK_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY)
+    set DEEPSEEK_API_KEY=your-key
     python examples/research_flow.py
 """
 import sys, os

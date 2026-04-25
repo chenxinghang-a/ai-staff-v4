@@ -836,7 +836,7 @@ class SmartInit:
     @staticmethod
     def _pick_best_overall(usable: list[ModelInfo]) -> str:
         if not usable:
-            return "gemini-2.5-flash-lite"
+            return ""  # 无可用模型时不hard-code，让调用方处理
         # 优先选稳定可靠的（flash-lite > flash > pro），同层级选strength最高的
         # 排序：tier优先级(低=便宜好) → 名字偏好(flash-lite最稳) → strength
         def sort_key(m: ModelInfo):
@@ -854,7 +854,7 @@ class SmartInit:
     def _pick_best_free(usable: list[ModelInfo]) -> str:
         free = [m for m in usable if m.is_free]
         if not free:
-            return usable[0].name if usable else "gemini-2.5-flash-lite"
+            return usable[0].name if usable else ""
         best = max(free, key=lambda m: m.strength_score)
         return best.name
 

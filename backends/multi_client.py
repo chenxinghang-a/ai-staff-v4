@@ -25,12 +25,12 @@ class MultiLLMClient:
     
     Usage:
         profiles = {
+            "deepseek": BackendProfile("deepseek", "https://...", "sk-...", "deepseek-chat"),
             "openai": BackendProfile("openai", "https://...", "sk-...", "gpt-4o-mini"),
-            "gemini": BackendProfile("gemini", "https://...", "...", "gemini-2.5-flash"),
         }
         client = MultiLLMClient(profiles)
         response = client.chat(messages)           # Auto-routed
-        response = client.chat(messages, profile="gemini")  # Force specific
+        response = client.chat(messages, profile="deepseek")  # Force specific
         results = client.chat_all(messages)         # Call ALL backends
     """
 

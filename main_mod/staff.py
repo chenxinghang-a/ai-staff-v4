@@ -1304,7 +1304,7 @@ class AIStaff:
         """V4: 快速启动（委托给startup模块）
         
         Args:
-            provider: "auto"(自动发现) | "gemini" | "openai" | "deepseek" | "ollama"
+            provider: "auto"(自动发现) | "deepseek" | "openai" | "gemini" | "ollama" | "moonshot" | ...
         """
         from .startup import quick_start as _quick_start
         return _quick_start(cls, api_key=api_key, provider=provider,
@@ -1447,7 +1447,7 @@ class AIStaff:
 staff = AIStaff.from_env()
 
 # 快速启动
-staff = AIStaff.quick_start("your-api-key", provider="gemini")
+staff = AIStaff.quick_start("your-api-key", provider="deepseek")
 
 # YAML配置
 staff = AIStaff.from_config_file("config.yaml")

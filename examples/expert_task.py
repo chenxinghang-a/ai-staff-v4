@@ -1,7 +1,8 @@
 """Example 3: Expert Task — 代码生成+审查闭环，确保代码质量
 
 Usage:
-    set GEMINI_API_KEY=your-key
+    # Set any API key (DEEPSEEK_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY)
+    set DEEPSEEK_API_KEY=your-key
     python examples/expert_task.py
 """
 import sys, os

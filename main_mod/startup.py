@@ -69,8 +69,14 @@ def from_env(cls, model: str = "") -> 'AIStaff':
     
     if base_url and api_key:
         from ..backends.smart_init import SmartInit
+        # 自动推断provider：从base_url匹配，不hard-code gemini
+        provider_hint = "auto"
+        for pname, pdef in PROVIDER_TEMPLATES.items():
+            if pdef.get("base_url") and base_url.rstrip("/") in pdef["base_url"].rstrip("/"):
+                provider_hint = pname
+                break
         registry = SmartInit.auto_configure(
-            extra_keys={"gemini": api_key},
+            extra_keys={provider_hint: api_key} if provider_hint != "auto" else {"auto": api_key},
             proxy_hint=proxy,
         )
         effective_model = default_model or registry.best_overall
@@ -156,10 +162,11 @@ def from_env(cls, model: str = "") -> 'AIStaff':
             f"V4 from_env() failed: no API keys found.\n"
             f"Scanned env vars: {', '.join(scanned_envs)}\n\n"
             "Quick fix:\n"
-            "  1. set GEMINI_API_KEY=your-key   (Windows)\n"
-            "  2. export GEMINI_API_KEY=your-key (Linux/Mac)\n"
-            "  3. Or: staff = AIStaff.quick_start('your-key', provider='gemini')\n"
-            "  4. Or: create ~/.ai-staff/keys.json or config.yaml"
+            "  1. Set any API key env var (pick one you have):\n"
+            "     GEMINI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY / MOONSHOT_API_KEY\n"
+            "  2. Or: staff = AIStaff.quick_start('your-api-key', provider='deepseek')\n"
+            "  3. Or: create ~/.ai-staff/keys.json or config.yaml\n"
+            "  4. Or: start Ollama locally (no key needed)"
         ) from e
 
 
@@ -300,7 +307,7 @@ def discover_and_start(cls, proxy: str = "") -> 'AIStaff':
         "V4 discover_and_start() found no available LLM backend.\n"
         f"Scanned: {', '.join(scanned)}\n\n"
         "Quick fix options:\n"
-        "  1. export GEMINI_API_KEY='your-key'\n"
+        "  1. Set any API key: GEMINI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY\n"
         "  2. staff = AIStaff.quick_start('your-key')\n"
         "  3. Start Ollama: ollama serve\n"
         "  4. Create config.yaml (see config.example.yaml)"

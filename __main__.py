@@ -8,6 +8,7 @@ def main():
         print("Usage: python -m ai_staff_v4 <command>")
         print()
         print("Commands:")
+        print("  setup            — First-run setup wizard (configure API key)")
         print("  chat <message>   — Chat with AI (zero-config)")
         print("  scan             — Scan available LLM providers")
         print("  health           — Health check all backends")
@@ -21,12 +22,18 @@ def main():
         print(f"LoomLLM v{__version__}")
         return 0
     
+    if cmd == "setup":
+        from ai_staff_v4.getting_started import main as setup_main
+        return setup_main()
+    
     if cmd == "scan":
         from ai_staff_v4.backends.smart_init import SmartInit
         registry = SmartInit.auto_configure(force_rescan=True)
         print(f"\n  Usable models: {len(registry.usable_models)}")
         for m in registry.usable_models:
             print(f"    {m.name:40s} [{m.tier:8s}] {m.provider} ({m.latency_ms:.0f}ms)")
+        if not registry.usable_models:
+            print("  No models found. Run: python -m ai_staff_v4 setup")
         return 0
     
     if cmd == "health":
@@ -48,6 +55,7 @@ def main():
         return 0
     
     print(f"Unknown command: {cmd}")
+    print("Run 'python -m ai_staff_v4' for help")
     return 1
 
 if __name__ == "__main__":
