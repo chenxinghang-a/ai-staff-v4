@@ -19,6 +19,16 @@ class ExecutorAgent(BaseAgent):
         if expert.style_hints:
             system_parts.append(f"\n【风格要求】{expert.style_hints}")
         
+        # Inject skill context (code templates, tips) for bound tools
+        if expert.tools:
+            try:
+                from ..skills.registry import SkillRegistry
+                skill_ctx = SkillRegistry.get_context(expert.tools)
+                if skill_ctx:
+                    system_parts.append(f"\n{skill_ctx}")
+            except Exception:
+                pass  # Skills module optional, don't break execution
+        
         ctx_header = task_state.plan and f"\n【已有规划】{task_state.plan}"
         if ctx_header:
             system_parts.insert(0, ctx_header)

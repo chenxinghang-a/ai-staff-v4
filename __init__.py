@@ -43,6 +43,9 @@ def __getattr__(name):
         'ModelRouter': ('.backends.router', 'ModelRouter'),
         'SmartInit': ('.backends.smart_init', 'SmartInit'),
         'FallbackManager': ('.backends.fallback', 'FallbackManager'),
+        # Skills
+        'SkillRegistry': ('.skills.registry', 'SkillRegistry'),
+        'SkillConfig': ('.skills.registry', 'SkillConfig'),
     }
     
     if name in _imports:
@@ -78,4 +81,5 @@ __all__ = [
     'EventBus', 'MemorySystem', 'ExpertRegistry', 'TaskClassifier',
     'MultiLLMClient', 'ModelRouter', 'SmartInit', 'FallbackManager',
     'CollaborationLoop', 'RouteContext', 'StructuredFeedback',
+    'SkillRegistry', 'SkillConfig',
 ]

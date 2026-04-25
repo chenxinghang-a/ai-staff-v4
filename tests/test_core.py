@@ -82,7 +82,7 @@ class TestExpertRegistry(unittest.TestCase):
         exp = ExpertRegistry.get("coder")
         self.assertIsNotNone(exp)
         self.assertEqual(exp.id, "coder")
-        self.assertEqual(exp.name, "高级工程师")
+        self.assertEqual(exp.name, "控制程序工程师")
 
     def test_get_fallback_generalist(self):
         from ai_staff_v4.experts.registry import ExpertRegistry

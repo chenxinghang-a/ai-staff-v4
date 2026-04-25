@@ -1,0 +1,222 @@
+# ═══════════════════════════════════════════════════════════
+#  LoomLLM Industrial Automation Skills
+# ═══════════════════════════════════════════════════════════
+#  6个电气工程领域技能，按工业通信/SCADA/设计/仿真分类
+#  绑定方式：在 experts.yaml 的 tools 字段引用 skill id
+
+# ── 工业通信协议 ──
+
+- id: pymodbus
+  name: Modbus通信
+  description: "Modbus TCP/RTU/ASCII客户端与服务端，用于PLC/传感器数据采集、寄存器读写"
+  domain_tags: [modbus, industrial-comms, plc, scada, iot]
+  python_package: pymodbus
+  code_template: |
+    from pymodbus.client import ModbusTcpClient
+
+    client = ModbusTcpClient('192.168.1.100', port=502)
+    client.connect()
+
+    # 读保持寄存器
+    result = client.read_holding_registers(address=0, count=10, slave=1)
+    if not result.isError():
+        print(result.registers)
+
+    # 写单个寄存器
+    client.write_register(address=0, value=1234, slave=1)
+
+    # 读线圈
+    coils = client.read_coils(address=0, count=8, slave=1)
+
+    client.close()
+  tips:
+    - "Modbus TCP默认端口502，RTU需指定串口(baudrate/parity)"
+    - "slave参数即站号/单元ID，常见值1-247"
+    - "寄存器地址通常0-based，注意文档是否1-based"
+
+- id: python-snap7
+  name: 西门子S7通信
+  description: "西门子S7-200/300/400/1200/1500 PLC通信，DB块读写、诊断查询"
+  domain_tags: [s7, siemens, plc, industrial-comms, db-block]
+  python_package: python-snap7
+  code_template: |
+    import snap7
+
+    plc = snap7.client.Client()
+    plc.connect('192.168.1.10', rack=0, slot=1)  # S7-300/400
+    # plc.connect('192.168.1.10', rack=0, slot=0)  # S7-1200
+    # plc.connect('192.168.1.10', rack=0, slot=1)  # S7-1500
+
+    # 读取DB块
+    data = plc.db_read(db_number=1, start=0, size=10)
+
+    # 写入DB块
+    data = bytearray(b'\\x01\\x02\\x03')
+    plc.db_write(db_number=1, start=0, data=data)
+
+    # 读取M区 (Mark area)
+    m_data = plc.read_area(snap7.types.Areas.MK, 0, 0, 10)
+
+    # PLC诊断
+    info = plc.get_cpu_info()
+    print(f"Module: {info.ModuleTypeName}")
+
+    plc.disconnect()
+  tips:
+    - "rack/slot: S7-300通常0/1, S7-1200通常0/0, S7-1500通常0/1"
+    - "DB块数据需用struct解包：struct.unpack('>f', data[0:4])"
+    - "需要libsnap7.dll，pip install python-snap7会自动下载"
+
+- id: open62541
+  name: OPC UA通信
+  description: "OPC UA客户端/服务端，跨平台工业设备互联、数据订阅"
+  domain_tags: [opcua, industrial-comms, iot, industry40, scada]
+  python_package: opcua-asyncio
+  code_template: |
+    import asyncio
+    from asyncua import Server, Client, ua
+
+    # ── 服务端：暴露数据 ──
+    async def run_server():
+        server = Server()
+        await server.init()
+        server.set_endpoint("opc.tcp://0.0.0.0:4840/freeopcua/server/")
+
+        uri = "http://examples.freeopcua.github.io"
+        idx = await server.register_namespace(uri)
+
+        myobj = await server.nodes.objects.add_object(idx, "MyPLC")
+        temp = await myobj.add_variable(idx, "Temperature", 0.0)
+        await temp.set_writable()
+
+        async with server:
+            while True:
+                await temp.write_value(25.0 + asyncio.get_event_loop().time() % 10)
+                await asyncio.sleep(1)
+
+    # ── 客户端：读取数据 ──
+    async def run_client():
+        client = Client("opc.tcp://localhost:4840/freeopcua/server/")
+        async with client:
+            node = client.get_node("ns=2;i=2")
+            value = await node.read_value()
+            print(f"Value: {value}")
+  tips:
+    - "OPC UA默认端口4840，安全策略开发用NoSecurity"
+    - "asyncio模式，需要async/await"
+    - "节点ID格式：ns=命名空间;i=数字标识 或 s=字符串标识"
+
+# ── SCADA/HMI ──
+
+- id: fuxa-scada
+  name: SCADA组态
+  description: "Web端SCADA/HMI组态，拖拽式监控界面、实时数据绑定、报警管理"
+  domain_tags: [scada, hmi, monitoring, visualization, alarm]
+  python_package: ""
+  deploy: |
+    # Docker部署（推荐）
+    docker run -d --name fuxa -p 1881:1881 -v fuxa-data:/app/server frangoteam/fuxa:latest
+    # 访问 http://localhost:1881 (admin/admin)
+
+    # 或本地安装
+    git clone https://github.com/frangoteam/FUXA.git && cd FUXA && npm install && node server.js
+  code_template: |
+    # FUXA配置文件路径：./server/config.json
+    # 设备驱动配置示例（Modbus TCP）
+    {
+      "devices": [{
+        "id": "plc1",
+        "name": "MainPLC",
+        "driver": "ModbusTCP",
+        "options": {
+          "host": "192.168.1.100",
+          "port": 502,
+          "slaveId": 1
+        },
+        "tags": [
+          {"id": "temp1", "address": "HR1", "type": "float"},
+          {"id": "pump1", "address": "C1", "type": "bool"}
+        ]
+      }]
+    }
+  tips:
+    - "FUXA是Web应用，通过浏览器拖拽组态，不是Python API"
+    - "支持Modbus/OPC UA/S7等多协议驱动"
+    - "配置存在server/config.json，可程序化管理"
+
+# ── 电气设计 ──
+
+- id: qelectrotech
+  name: 电气CAD
+  description: "电气原理图/接线图/配电柜布置图绘制，8200+元件库"
+  domain_tags: [electrical-design, cad, schematic, wiring-diagram, bom]
+  python_package: ""
+  install: |
+    # Windows
+    winget install QElectroTech.QElectroTech
+    # 或下载：https://qelectrotech.org/download.html
+  code_template: |
+    # QElectroTech是GUI工具，不是Python库
+    # 但可以通过命令行批量导出：
+    qelectrotech --export-pdf project.qet output.pdf
+
+    # 项目文件格式：XML (.qet)
+    # 元件库路径：share/elements/ (IEC/ANSI/DIN标准)
+
+    # 自动化生成原理图的Python辅助脚本模式：
+    # 1. 用Python生成QET项目XML
+    # 2. 用qelectrotech CLI导出PDF/PNG
+    import xml.etree.ElementTree as ET
+
+    project = ET.Element('project', version='0.70')
+    diagram = ET.SubElement(project, 'diagram', title='主回路')
+    # 添加元件、导线等...
+  tips:
+    - "QET是桌面GUI应用，不是Python库"
+    - "内置IEC 60617标准元件库（8200+符号）"
+    - "项目文件是XML格式，可用Python程序化生成"
+
+# ── 电力系统仿真 ──
+
+- id: pypsa
+  name: 电力系统分析
+  description: "潮流计算、最优潮流(OPF)、电网规划、可再生能源并网分析"
+  domain_tags: [power-system, simulation, grid, opf, renewable]
+  python_package: pypsa
+  code_template: |
+    import pypsa
+
+    network = pypsa.Network()
+
+    # 添加母线
+    network.add("Bus", "Bus1", v_nom=20)       # 20kV
+    network.add("Bus", "Bus2", v_nom=0.4)      # 400V
+
+    # 添加线路
+    network.add("Line", "Line1",
+        bus0="Bus1", bus1="Bus2",
+        x=0.1, r=0.01, s_nom=10)               # 10MVA
+
+    # 添加变压器
+    network.add("Transformer", "T1",
+        bus0="Bus1", bus1="Bus2",
+        x=0.1, s_nom=10)
+
+    # 添加发电机和负荷
+    network.add("Generator", "Gen1", bus="Bus1", p_nom=100)
+    network.add("Load", "Load1", bus="Bus2", p_set=50)
+
+    # 潮流计算
+    network.lpf()                               # 线性潮流
+    # network.pf()                              # 完整潮流(牛顿-拉夫逊)
+
+    # 最优潮流
+    network.optimize()
+
+    # 查看结果
+    print(network.generators_t.p)               # 发电机出力
+    print(network.lines_t.p0)                   # 线路潮流
+  tips:
+    - "依赖：numpy, pandas, scipy, networkx, linopy"
+    - "lpf()线性潮流快但不考虑无功，pf()完整但需迭代"
+    - "OPF需要求解器：默认highs(glpsolver)，也可配cplex/gurobi"
