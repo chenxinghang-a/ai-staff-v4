@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 import re
 
 # Intra-package imports
@@ -7,6 +8,8 @@ from .types import TaskState
 from ..core.events import EventBus, Event, EventType, bus
 from ..core.validation import ValidationResult
 from ..experts.registry import ExpertConfig
+
+logger = logging.getLogger(__name__)
 
 
 class ReviewAgent(BaseAgent):
@@ -49,12 +52,16 @@ class ReviewAgent(BaseAgent):
         
         review_response, _usage = self.llm.chat_completion(review_messages, temperature=0.2)
         
-        # Parse score
+        # Parse score — 默认0.0（避免0.7误导为"几乎通过"导致死循环）
         score_match = re.search(r'质量评分[::\s]*(\d+)/?10?', review_response)
-        score = float(score_match.group(1)) / 10 if score_match else 0.7
+        if score_match:
+            score = float(score_match.group(1)) / 10
+        else:
+            score = 0.0
+            logger.warning("Review score regex failed, defaulting to 0.0")
         
-        # Parse pass/fail
-        passed = bool(re.search(r'是否通过[::\s]*是', review_response))
+        # Parse pass/fail — 大小写不敏感
+        passed = bool(re.search(r'是否通过[::\s]*是', review_response, re.IGNORECASE))
         
         # Parse issues
         issues_section = re.search(r'问题列表[::\s]*\n(.*?)(?=##|$)', review_response, re.DOTALL)

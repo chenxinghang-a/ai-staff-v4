@@ -82,6 +82,16 @@ class LLMClient:
                 
                 content = data["choices"][0]["message"]["content"]
                 
+                # Strip thinking tokens from models that leak them (e.g. Gemma)
+                import re as _re
+                raw_content = content
+                t_open, t_close = "<thought>", "</thought>"
+                if t_open in content and t_close in content:
+                    pattern = _re.escape(t_open) + r".*?" + _re.escape(t_close)
+                    content = _re.sub(pattern, "", content, flags=_re.DOTALL).strip()
+                if not content:
+                    content = raw_content  # fallback to raw
+                
                 # Token stats
                 usage = data.get("usage", {})
                 usage_info = {

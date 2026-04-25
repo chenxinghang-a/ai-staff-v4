@@ -54,8 +54,7 @@ class MultiLLMClient:
         
         # Shared budget manager
         self.budget: Optional[TokenBudgetManager] = None
-        for c in self._clients.values():
-            c.budget = self.budget
+        # Note: budget is set later via property; clients are synced there
         
         log.system(f"MultiLLM Initialized {len(profiles)} backend(s): "
               f"{', '.join(p.display_name for p in profiles.values())}")
